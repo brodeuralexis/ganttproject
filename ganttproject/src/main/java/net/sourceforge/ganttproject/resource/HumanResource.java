@@ -63,9 +63,13 @@ public class HumanResource implements CustomPropertyHolder {
 
   private BigDecimal myStandardPayRate;
 
+  private String externalTimesheetPath;
+
   private final DefaultListModel<GanttDaysOff> myDaysOffList = new DefaultListModel<>();
 
   private final List<ResourceAssignment> myAssignments = new ArrayList<>();
+
+  private final List<ResourceAssignment> externalAssignments = new ArrayList<>();
 
   private final CustomColumnsValues myCustomProperties;
 
@@ -119,6 +123,13 @@ public class HumanResource implements CustomPropertyHolder {
   public void delete() {
     removeAllAssignments();
     myManager.remove(this);
+  }
+  public String getExternalTimesheetPath() {
+    return externalTimesheetPath;
+  }
+
+  public void setExternalTimesheetPath(String externalTimesheetPath) {
+    this.externalTimesheetPath = externalTimesheetPath;
   }
 
   public void setId(int id) {
@@ -208,13 +219,20 @@ public class HumanResource implements CustomPropertyHolder {
       e.printStackTrace();
     }
   }
-
+  public List<ResourceAssignment> getExternalAssignments() {
+      return externalAssignments;
+  }
   public ResourceAssignment createAssignment(ResourceAssignment assignmentToTask) {
     ResourceAssignment result = new ResourceAssignmentImpl(assignmentToTask);
     myAssignments.add(result);
     resetLoads();
     fireAssignmentsChanged();
     return result;
+  }
+
+  public void createExternalAssignment(Task task) {
+    ResourceAssignment result = new ExternalResourceAssignment(this, task);
+    externalAssignments.add(result);
   }
 
   public ResourceAssignment[] getAssignments() {
@@ -410,6 +428,61 @@ public class HumanResource implements CustomPropertyHolder {
     @Override
     public String toString() {
       return this.getResource().getName() + " -> " + this.getTask().getName();
+    }
+
+
+  }
+
+  private class ExternalResourceAssignment implements ResourceAssignment {
+    private Task task;
+    private HumanResource humanResource;
+    public ExternalResourceAssignment(HumanResource hr, Task t) {
+      task = t;
+      humanResource = hr;
+    }
+    @Override
+    public Task getTask() {
+      return task;
+    }
+
+    @Override
+    public HumanResource getResource() {
+      return humanResource;
+    }
+
+    @Override
+    public float getLoad() {
+      return 0;
+    }
+
+    @Override
+    public void setLoad(float load) {
+
+    }
+
+    @Override
+    public void delete() {
+
+    }
+
+    @Override
+    public void setCoordinator(boolean responsible) {
+
+    }
+
+    @Override
+    public boolean isCoordinator() {
+      return false;
+    }
+
+    @Override
+    public Role getRoleForAssignment() {
+      return null;
+    }
+
+    @Override
+    public void setRoleForAssignment(Role role) {
+
     }
   }
 }

@@ -23,10 +23,14 @@ import net.sourceforge.ganttproject.CustomPropertyDefinition;
 import net.sourceforge.ganttproject.CustomPropertyManager;
 import net.sourceforge.ganttproject.IGanttProject;
 import net.sourceforge.ganttproject.resource.HumanResource;
+import net.sourceforge.ganttproject.task.ResourceAssignment;
+import net.sourceforge.ganttproject.task.Task;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
 import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +43,7 @@ class ResourceSaver extends SaverBase {
     HumanResource[] resources = project.getHumanResourceManager().getResourcesArray();
     for (int i = 0; i < resources.length; i++) {
       HumanResource p = resources[i];
+      externalSave(project, p);
       addAttribute("id", p.getId(), attrs);
       addAttribute("name", p.getName(), attrs);
       addAttribute("function", p.getRole().getPersistentID(), attrs);
@@ -53,7 +58,44 @@ class ResourceSaver extends SaverBase {
     }
     endElement("resources", handler);
   }
-
+  void externalSave(IGanttProject project, HumanResource resource) throws SAXException {
+    System.out.println("Saving external resource...");
+    String path = resource.getExternalTimesheetPath();
+    if (path == null || path.length() == 0) {
+      return;
+    }
+    File f = new File(path);
+    try {
+      f.createNewFile();
+      OutputStream stream = new FileOutputStream(f, false);
+      AttributesImpl attrs = new AttributesImpl();
+      StreamResult result = new StreamResult(stream);
+      TransformerHandler handler = createHandler(result);
+      handler.startDocument();
+      addAttribute("name", resource.getName(), attrs);
+      addAttribute("id", resource.getId(), attrs);
+      startElement("resource", attrs, handler);
+      for (ResourceAssignment assignement : resource.getExternalAssignments()) {
+        Task task = assignement.getTask();
+        addAttribute("start", task.getStart().toXMLString(), attrs);
+        addAttribute("end", task.getEnd().toXMLString(), attrs);
+        startElement("task", attrs, handler);
+        endElement("task", handler);
+      }
+      for (ResourceAssignment assignement : resource.getAssignments()) {
+        Task task = assignement.getTask();
+        addAttribute("start", task.getStart().toXMLString(), attrs);
+        addAttribute("end", task.getEnd().toXMLString(), attrs);
+        startElement("task", attrs, handler);
+        endElement("task", handler);
+      }
+      endElement("resource", handler);
+      handler.endDocument();
+      stream.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
   private void saveRates(HumanResource p, TransformerHandler handler) throws SAXException {
     if (!BigDecimal.ZERO.equals(p.getStandardPayRate())) {
       AttributesImpl attrs = new AttributesImpl();
