@@ -234,10 +234,11 @@ public class GanttDialogPerson {
     // anymore...)
   }
   private void loadExternalTimesheet(String path) {
-    var xmlParser = new GanttXMLOpen(myTaskManager);
-    xmlParser.addTagHandler(new ExternalTimesheetHandler(myTaskManager, person));
-    File file = new File(path);
+
     try {
+      var xmlParser = new GanttXMLOpen(myTaskManager);
+      xmlParser.addTagHandler(new ExternalTimesheetHandler(myTaskManager, person));
+      File file = new File(path);
       if (file.exists()) {
 
         System.out.println("Loading external timesheet...");
