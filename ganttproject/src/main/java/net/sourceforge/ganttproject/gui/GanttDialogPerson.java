@@ -27,7 +27,9 @@ import net.sourceforge.ganttproject.gui.DateIntervalListEditor.DateInterval;
 import net.sourceforge.ganttproject.gui.DateIntervalListEditor.DefaultDateIntervalModel;
 import net.sourceforge.ganttproject.gui.options.OptionsPageBuilder;
 import net.sourceforge.ganttproject.gui.taskproperties.CustomColumnsPanel;
+import net.sourceforge.ganttproject.io.GanttXMLOpen;
 import net.sourceforge.ganttproject.language.GanttLanguage;
+import net.sourceforge.ganttproject.parser.ExternalTimesheetHandler;
 import net.sourceforge.ganttproject.resource.HumanResource;
 import net.sourceforge.ganttproject.roles.Role;
 import net.sourceforge.ganttproject.roles.RoleManager;
@@ -38,6 +40,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.io.File;
+import java.io.FileInputStream;
 
 public class GanttDialogPerson {
   private final TaskManager myTaskManager;
@@ -55,6 +59,7 @@ public class GanttDialogPerson {
   private final MoneyOption myStandardRateField = new DefaultMoneyOption("colStandardRate");
   private final MoneyOption myTotalCostField = new DefaultMoneyOption("colTotalCost");
   private final DoubleOption myTotalLoadField = new DefaultDoubleOption("colTotalLoad");
+  private final StringOption externalTimesheet = new DefaultStringOption("externalResource");
   private final EnumerationOption myRoleField;
   private final GPOptionGroup myGroup;
   private GPOptionGroup myRateGroup;
@@ -74,7 +79,7 @@ public class GanttDialogPerson {
       roleFieldValues[i] = enabledRoles[i].getName();
     }
     myRoleField = new DefaultEnumerationOption<Object>("colRole", roleFieldValues);
-    myGroup = new GPOptionGroup("", new GPOption[]{myNameField, myPhoneField, myMailField, myRoleField});
+    myGroup = new GPOptionGroup("", new GPOption[]{myNameField, myPhoneField, myMailField, myRoleField, externalTimesheet});
     myGroup.setTitled(false);
 
     ((GPAbstractOption)myTotalCostField).setWritable(false);
@@ -119,6 +124,7 @@ public class GanttDialogPerson {
     myStandardRateField.setValue(person.getStandardPayRate());
     myTotalCostField.setValue(person.getTotalCost());
     myTotalLoadField.setValue(person.getTotalLoad());
+    externalTimesheet.setValue(person.getExternalTimesheetPath());
   }
 
   private Component getComponent() {
@@ -221,9 +227,25 @@ public class GanttDialogPerson {
       person.addDaysOff(new GanttDaysOff(interval.start, interval.getEnd()));
     }
     person.setStandardPayRate(myStandardRateField.getValue());
+    person.setExternalTimesheetPath(externalTimesheet.getValue());
+    loadExternalTimesheet(externalTimesheet.getValue());
     myAssignmentsPanel.commit();
     // FIXME change = false;? (after applying changed they are not changes
     // anymore...)
+  }
+  private void loadExternalTimesheet(String path) {
+    var xmlParser = new GanttXMLOpen(myTaskManager);
+    xmlParser.addTagHandler(new ExternalTimesheetHandler(myTaskManager, person));
+    File file = new File(path);
+    try {
+      if (file.exists()) {
+
+        System.out.println("Loading external timesheet...");
+        xmlParser.load(new FileInputStream(file));
+      }
+    } catch (Exception exception) {
+
+    }
   }
 
   private Role findRole(String roleName) {
