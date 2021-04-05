@@ -1,6 +1,11 @@
 // This installs dependencyUpdates plugin
 // Run gradle dependencyUpdates to get the report
 
+plugins {
+    id "org.sonarqube" version "3.1.1"
+    id 'jacoco'
+}
+
 // Path to launch4j binary
 ext.launch4j = '/opt/launch4j/launch4j'
 // Directories where we build the distro
@@ -50,6 +55,14 @@ allprojects {
 
     clean {
         delete += "dist-bin"
+    }
+
+    test {
+        finalizedBy jacocoTestReport // report is always generated after tests run
+    }
+
+    jacocoTestReport {
+        dependsOn test // tests are required to run before generating the report
     }
 }
 
